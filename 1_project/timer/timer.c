@@ -14,14 +14,15 @@ struct timespec* getProcessTime(char *progPath, char **args, char **envp)
     struct timespec startTime;
     struct timespec stopTime;
     struct timespec *resultTime;
-    pid_t childPid;
 
     if(NULL == progPath) errExit("Invalid program path");
-
-    switch(childPid = fork()){
+    
+    switch(fork()){
         case -1: errExit("getProccessTime: fork() failure"); break;
         case 0 : /* child */
-                 execve(progPath, args, envp);               break;
+                 execve(progPath, args, envp);               
+                 errExit("execve returned, ??");
+                 break;
         default: /* parent */
                  clock_gettime(CLOCK_REALTIME, &startTime);
                  wait(NULL);

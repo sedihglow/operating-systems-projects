@@ -8,32 +8,6 @@
 
 #include "header.h"
 
-#define FAIL -1
-
-
-
-/* TODO: Adjust this macro or make an alternate that can call a function with
-         variable arguments, rather than just one argument. (i.e. free(pntr);) */
-/* vectorizes a function funct, its C99 as fuck tho.
-   -Type is the type of pointer used. (VA_ARGS could be void for example.). 
-   -... is a variable argument list.
-   -will execute every argument into the function.
-   -funct only takes in one argument. */
-#define APPLY_FUNCT(type, funct, ...)                                          \
-{                                                                              \
-    void *stopper = NULL; /* pointer to 0 */                             \
-    type **apply_list = (type*[]){__VA_ARGS__, stopper};                       \
-    int __i_;                                                                  \
-                                                                               \
-    for(__i_ = 0; apply_list[__i_] != stopper; ++__i_){                        \
-        (funct)(apply_list[__i_]);}                                            \
-} /* end apply_funct */
-    
-/* apply free to every pointer given in the argument list using the
-   apply_funct macro */
-#define FREE_ALL(...)   APPLY_FUNCT(void, free, __VA_ARGS__)
-
-
 /******************************************************************************
  *                          static prototypes
  *****************************************************************************/
@@ -123,7 +97,6 @@ size_t printLines(char *path, uint32_t numToPrint){
         free(printStr);
     }while(nlCount < numToPrint);
    
-    //FREE_ALL(printStr);
     return 0;
 }
 #undef IN_BUFF

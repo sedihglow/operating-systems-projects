@@ -18,6 +18,7 @@ int32_t main(int32_t argc, char *argv[], char* envp[])
 #define BUFF 128
 #define P_BUFF 256
     struct timespec *timeResult;   // time of program to execute
+    ssize_t numToWrite;
     int32_t fd;                    // used to test if command exists
     char sec[BUFF] = {'\0'};
     char nano[BUFF] = {'\0'};
@@ -32,12 +33,15 @@ int32_t main(int32_t argc, char *argv[], char* envp[])
     else close(fd);
 
     timeResult = getProcessTime(argv[1], argv+1, envp);
-
+    
+    /* convert results into a print statment */
     snprintf(sec, BUFF, "%ld", timeResult -> tv_sec);
     snprintf(nano, BUFF, "%ld", timeResult -> tv_nsec);
     snprintf(toPrint, P_BUFF, "%s seconds and %s nano seconds\n", sec, nano);
 
-    write(STDOUT_FILENO, toPrint, strlen(toPrint));
+    numToWrite = strlen(toPrint);
+    if(numToWrite != write(STDOUT_FILENO, toPrint, numToWrite))
+        errExit("main: write() error or partial write, failure");
 
     free(timeResult);
     exit(EXIT_SUCCESS);

@@ -1,18 +1,22 @@
 CC = gcc
-CPPFLAGS = -c -Wall -Wextra -pedantic -pthread -m64 -O0 -g 
+CPPFLAGS = -c -Wall -Wextra -pthread -m64 -O0 -g -pedantic -std=c99
 LDFLAGS = -pthread -m64
 
-a.out:					29-1.o err_handle.o get_num.o
-						$(CC) $(LDFLAGS) *.o -o a.out
+a.out:					main.o piper.o err_handle.o convNum.o
+						$(CC) $(LDFLAGS) main.o piper.o err_handle.o convNum.o -o a.out
 
-29-1.o:					29-1.c ../../sedhead.h
-						$(CC) $(CPPFLAGS) 29-1.c
+main.o:					main.c ../utility_sys.h
+						$(CC) $(CPPFLAGS) main.c
 
-err_handle.o:			../../err_handle/err_handle.c ../../sedhead.h
-						$(CC) $(CPPFLAGS) ../../err_handle/err_handle.c
+err_handle.o:			../err_handle/err_handle.c ../utility_sys.h
+						$(CC) $(CPPFLAGS) ../err_handle/err_handle.c
 
-get_num.o:				../../get_num/get_num.c ../../sedhead.h
-						$(CC) $(CPPFLAGS) ../../get_num/get_num.c
+convNum.o:				../convNum/convNum.c ../utility_sys.h
+						$(CC) $(CPPFLAGS) ../convNum/convNum.c
+
+piper.o:				piper.c ../utility_sys.h
+						$(CC) $(CPPFLAGS) piper.c
+
 
 .PHONY: check
 check:					# check for memory leak

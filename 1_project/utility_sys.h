@@ -10,6 +10,11 @@
 
 #define FAIL -1
 
+#define RW_END 0
+
+#define P_RD 0 // value for a pipe read fd in pipefd[2]
+#define P_WR 1 // value for a pip write fd in pipefd[2]
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -69,13 +74,34 @@
     {                                                                          \
         resStr[_TM_] = inBuf[bfPl];                                            \
         ++bfPl;                  /* increase buff placement */                 \
-        if(inBuf[bfPl] == '\0'){   /* reached end of current buffer */         \
+        if('\0' == inbuf[bfpl]){   /* reached end of current buffer */         \
             READ_INPUT(fd, inBuf, nByte, retBytes);                            \
             inBuff[retBytes] = '\0';                                           \
             bfPl = 0;                                                          \
         }                                                                      \
     } /* end for */                                                            \
 } // end READ_NEXT_FILE
+
+/* TODO: Adjust this macro or make an alternate that can call a function with
+         variable arguments, rather than just one argument. (i.e. free(pntr);) */
+/* vectorizes a function funct, its C99 as fuck tho.
+   -Type is the type of pointer used. (VA_ARGS could be void for example.). 
+   -... is a variable argument list.
+   -will execute every argument into the function.
+   -funct only takes in one argument. */
+#define APPLY_FUNCT(type, funct, ...)                                          \
+{                                                                              \
+    void *stopper = NULL;                                                      \
+    type **apply_list = (type*[]){__VA_ARGS__, stopper};                       \
+    int __i_;                                                                  \
+                                                                               \
+    for(__i_ = 0; apply_list[__i_] != stopper; ++__i_){                        \
+        (funct)(apply_list[__i_]);}                                            \
+} /* end apply_funct */
+    
+/* apply free to every pointer given in the argument list using the
+   apply_funct macro */
+#define FREE_ALL(...)   APPLY_FUNCT(void, free, __VA_ARGS__)
 
 /* Subtract two timespec structures and place them in a resulting timespec
  * struct.
