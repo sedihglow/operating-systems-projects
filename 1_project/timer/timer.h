@@ -10,9 +10,4 @@
 
 #include "../utility_sys.h"
 
-typedef struct{
-    double userTimeSec;
-    double sysTimeSec;
-} processTime_s;
-
-processTime_s getProcessTime(char *progPath, char **args, char **envp);
+struct timespec* getProcessTime(char *progPath, char **args, char **envp);

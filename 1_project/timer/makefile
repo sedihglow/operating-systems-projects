@@ -1,9 +1,9 @@
 CC = gcc
-CPPFLAGS = -c -Wall -Wextra -pthread -m64 -O0 -g 
+CPPFLAGS = -c -Wall -Wextra -pthread -m64 -O0 -g -pedantic -std=c99
 LDFLAGS = -pthread -m64
 
 a.out:					main.o timer.o err_handle.o convNum.o
-						$(CC) $(LDFLAGS) *.o -o a.out
+						$(CC) $(LDFLAGS) main.o timer.o err_handle.o convNum.o -o a.out
 
 main.o:					main.c ../utility_sys.h
 						$(CC) $(CPPFLAGS) main.c
@@ -16,6 +16,7 @@ convNum.o:				../convNum/convNum.c ../utility_sys.h
 
 timer.o:				timer.c ../utility_sys.h
 						$(CC) $(CPPFLAGS) timer.c
+
 
 .PHONY: check
 check:					# check for memory leak

@@ -6,6 +6,10 @@
 #ifndef _UTL_SYS_H_
 #define _UTL_SYS_H_
 
+#define _POSIX_C_SOURCE 199309
+
+#define FAIL -1
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -17,62 +21,80 @@
 #include <string.h>
 #include <inttypes.h>
 #include <errno.h>
-#include <assert.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#define NDEBUG 1
+#include <assert.h>
 
 #include "./convNum/convNum.h"       /* str to int functions */
 #include "./err_handle/err_handle.h" /* general error printing */
 
 /* Allocate an input buffer with a '\0' terminatior at the end.
-   If nothing is read, buff[0] = '\0'.      
-   - fd    == int   , File descriptor used for allocInputBuff()
-   - buff  == char* , Buffer to be filled with character data from fd.
-   - nbyte == size_t, number of bytes to read 
-   - retBytes == ssize_t, number of bytes read from file
-                    (typically the size of buffer array) */
+ *  If nothing is read, buff[0] = '\0'.      
+ *  - fd    == int   , File descriptor used for allocInputBuff()
+ *  - buff  == char* , Buffer to be filled with character data from fd.
+ *  - nbyte == size_t, number of bytes to read 
+ *  - retBytes == ssize_t, number of bytes read from file
+ *                   (typically the size of buffer array) 
+ */
 #define READ_INPUT(fd, buff, nByte, retBytes)                                  \
 {                                                                              \
     assert(buff != NULL);                                                      \
-    if((retBytes = read(fd, (void*) buff, nByte)) == -1)                       \
+    if((retBytes = read(fd, (void*) buff, nByte)) == FAIL)                     \
         errExit("READ_INPUT, read() failure");                                 \
 } /* end READ_INPUT */
 
 /* Copy a variable ammount of characters from a buffer based on a given 
-   position.
-   Place resulting string in resStr based on a given conditional. 
-   resStr will be '\0' terminated.
-   NOTE: Typically used in specific steps or in a while loop. 
-   - fd     == int  , File descriptor corresponding to inBuf.
-   - inBuf  == char*, buffer to copy from. Must not be NULL.
-   - bfPl   == char*, the current location inside inBuf. (init: bfPl = inBuf
-   - resStr == char*, buffer to copy to.
-   - nbyte  == size_t, number of bytes to read
-   - conditional == The conditionals desired in the copy process.
-                  Example: inBuf[i] != ' ' && inBuf[i] != '\n'
-   - retBytes == number of bytes returned when READ_INPUT is called */
-#define READ_PARSE(fd, inBuf, bfPl, nByte, resStr, conditional, retBytes)      \
+ * position. Places a null value at end of inBUFF
+ * Place resulting string in resStr based on a given conditional. 
+ * NOTE: Typically used in specific steps or in a while loop. 
+ * - fd     == int  , File descriptor corresponding to inBuf.
+ * - inBuf  == char*, copy from buff. Must not be NULL, leave room for '\0'
+ * - bfPl   == int, the current location inside inBuf.
+ * - nbyte  == size_t, number of bytes to read
+ * - retBytes == number of bytes returned when READ_INPUT is called
+ * - resStr == char*, buffer to copy to.
+ * - resLen == size_t, length of resStr for conidional overflow stop point 
+ * - conditional == The conditionals desired in the copy process.
+ *                Example: inBuf[i] != ' ' && inBuf[i] != '\n' 
+ */
+#define READ_PARSE(fd, inBuf, bfPl, nByte, retBytes, resStr, resLen, conditional)\
 {                                                                              \
     int _TM_ = 0;                                                              \
-    assert(resStr != NULL && bfPl != NULL && inBuf != NULL);                   \
+    assert(resStr != NULL && inBuf != NULL);                                   \
                                                                                \
-    for(_TM_ = 0; conditional; ++_TM_)                                         \
+    for(_TM_ = 0; conditional && _TM_ < resLen; ++_TM_)                        \
     {                                                                          \
-        resStr[_TM_] = *bfPl;                                                  \
+        resStr[_TM_] = inBuf[bfPl];                                            \
         ++bfPl;                  /* increase buff placement */                 \
-        if(*bfPl == '\0'){   /* reached end of current buffer */               \
+        if(inBuf[bfPl] == '\0'){   /* reached end of current buffer */         \
             READ_INPUT(fd, inBuf, nByte, retBytes);                            \
             inBuff[retBytes] = '\0';                                           \
-            bfPl = inBuf;                                                      \
+            bfPl = 0;                                                          \
         }                                                                      \
     } /* end for */                                                            \
-                                                                               \
-    if(*(bfPl) == '\n'){                                                       \
-        resStr[_TM_] = '\n';                                                   \
-        ++(bfPl);  /* increment over '\n' */                                   \
-    }                                                                          \
 } // end READ_NEXT_FILE
 
-#endif
-/************ EOF **************/
+/* Subtract two timespec structures and place them in a resulting timespec
+ * struct.
+ * All passed values are pointers of struct timespec.
+ */
+#define _NANO_1SEC 1000000000
+#define TIMESPEC_SUB(toSubPtr, subByPtr, resRetPtr)                            \
+{                                                                              \
+    assert((toSubPtr) != NULL && (subByPtr) != NULL && (resRetPtr) != NULL);   \
+                                                                               \
+    (resRetPtr) -> tv_sec  = ((toSubPtr) -> tv_sec) - ((subByPtr) -> tv_sec);  \
+    (resRetPtr) -> tv_nsec = ((toSubPtr) -> tv_nsec) - ((subByPtr) -> tv_nsec);\
+                                                                               \
+    /* If nano seconds is negetive, need to adjust for carry by adding 1       \
+     * second to nano until nano is no longer negetive or seconds is zero. */  \
+    while(0 > ((resRetPtr) -> tv_nsec) && 0 < ((resRetPtr) -> tv_sec)){        \
+        --((resRetPtr) -> tv_sec);                                             \
+        (resRetPtr) -> tv_nsec = ((resRetPtr) -> tv_nsec) + _NANO_1SEC;        \
+    }                                                                          \
+}//end TIMESPEC_SUB
+
+#endif /************ EOF **************/

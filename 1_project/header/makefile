@@ -1,6 +1,6 @@
 CC = gcc
 CPPFLAGS = -c -Wall -Wextra -pthread -m64 -O0 -g 
-LDFLAGS = -pthread -m64
+LDFLAGS = -pthread -m64 -g
 
 a.out:					main.o header.o err_handle.o convNum.o
 						$(CC) $(LDFLAGS) *.o -o a.out

@@ -407,7 +407,7 @@
    -funct only takes in one argument. */
 #define APPLY_FUNCT(type, funct, ...)                                          \
 {                                                                              \
-    void *stopper = (int[]){0};                                                \
+    void *stopper = (int[]){0}; /* pointer to 0 */                             \
     type **apply_list = (type*[]){__VA_ARGS__, stopper};                       \
     int __i_;                                                                  \
                                                                                \
