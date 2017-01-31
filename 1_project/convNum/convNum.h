@@ -1,4 +1,5 @@
 /*
+    filename: convNum.h
     Turns a string of characters into a their numerical equivilance using
     strtoul family and error checking the results.
 */

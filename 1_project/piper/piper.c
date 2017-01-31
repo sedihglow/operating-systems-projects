@@ -8,16 +8,9 @@
 
 #include "piper.h"
 
-static volatile int rdyFlag = 0;
-
 /******************* STATIC PROTOTYPES ****************************************/
 static void takeInput(int pipeFD);
 static void processPipe(int pipeFD, char toRemove);
-
-void readyToPrint_handler(int sig){
-    if(SIGIO == sig)
-        rdyFlag = 1;
-}
 
 /****************** STATIC FUNCTIONS ******************************************/
 static void takeInput(int pipeFD)
@@ -39,17 +32,8 @@ static void takeInput(int pipeFD)
 
 static void processPipe(int pipeFD, char toRemove)
 {
-    struct sigaction sigact;
     char inBuff;      /* byte used in byte stream of pipe */
     ssize_t retBytes;
-
-    /* set and hook signal handler */
-    sigact.sa_flags = 0;
-    sigemptyset(&sigact.sa_mask); // exclude all signals from the set
-    sigact.sa_handler = readyToPrint_handler; // set signal handler address
-    sigaction(SIGIO, &sigact, NULL); //set for SIGIO
-
-    while(rdyFlag == 0); // wait for signal that input is retrieved
 
     do{
         /* get data from pipe */
@@ -84,7 +68,6 @@ void stdinToOut_remChar(char toRemove)
             if(FAIL == close(pipeFD[P_RD])) errExit("close() P_RD fail"); 
             takeInput(pipeFD[P_WR]); // take input stdin, write to pipe
             if(FAIL == close(pipeFD[P_WR])) errExit("close():child P_WR fail");
-            kill(childPID, SIGIO);
             wait(NULL);
     }
 }//end stdinToOut_remChar

@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     
     if(argc > 1) noerrExit("Invalid arguments, $cmd");
 
-    stdinToOut_remChar('p');
+    stdinToOut_remChar('q');
 
     exit(EXIT_SUCCESS);
 }//end main
