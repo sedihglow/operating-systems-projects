@@ -8,50 +8,49 @@
 
 #include "piper.h"
 
-static int rdyFlag = 0;
+static volatile int rdyFlag = 0;
 
 /******************* STATIC PROTOTYPES ****************************************/
-static void takeInput(int pipeFD, pid_t childPID);
+static void takeInput(int pipeFD);
 static void processPipe(int pipeFD, char toRemove);
 
 void readyToPrint_handler(int sig){
-    rdyFlag = 1;
-    printf("\nin\n");
-
+    if(SIGIO == sig)
+        rdyFlag = 1;
 }
 
 /****************** STATIC FUNCTIONS ******************************************/
-static void takeInput(int pipeFD, pid_t childPID)
+static void takeInput(int pipeFD)
 {
     char inBuff;
     ssize_t retBytes;
-
 
     do{
         /* get data from STDIN */
         READ_INPUT(STDIN_FILENO, &inBuff, sizeof(inBuff), retBytes);
 
         /* write to pipe */
+        if(retBytes == RW_END) break; // stops an extra newline
+
         if(FAIL == write(pipeFD, &inBuff, sizeof(inBuff)))
             errExit("takeInput, write() failure");
     }while(retBytes != RW_END);
-    printf("\nbefore kill\n");
-    kill(childPID, SIGIO);
 }//end takeInput
-
-
 
 static void processPipe(int pipeFD, char toRemove)
 {
+    struct sigaction sigact;
     char inBuff;      /* byte used in byte stream of pipe */
     ssize_t retBytes;
-struct sigaction sigact;
-sigact.sa_flags = 0;
-sigemptyset(&sigact.sa_mask);
 
-sigact.sa_handler = readyToPrint_handler;
-sigaction(SIGIO, &sigact, NULL);
-while(rdyFlag == 0);
+    /* set and hook signal handler */
+    sigact.sa_flags = 0;
+    sigemptyset(&sigact.sa_mask); // exclude all signals from the set
+    sigact.sa_handler = readyToPrint_handler; // set signal handler address
+    sigaction(SIGIO, &sigact, NULL); //set for SIGIO
+
+    while(rdyFlag == 0); // wait for signal that input is retrieved
+
     do{
         /* get data from pipe */
         READ_INPUT(pipeFD, &inBuff, sizeof(inBuff), retBytes);
@@ -83,8 +82,9 @@ void stdinToOut_remChar(char toRemove)
             break;
         default: /* parent */
             if(FAIL == close(pipeFD[P_RD])) errExit("close() P_RD fail"); 
-            takeInput(pipeFD[P_WR], childPID); // take input stdin, write to pipe
+            takeInput(pipeFD[P_WR]); // take input stdin, write to pipe
             if(FAIL == close(pipeFD[P_WR])) errExit("close():child P_WR fail");
+            kill(childPID, SIGIO);
             wait(NULL);
     }
 }//end stdinToOut_remChar
